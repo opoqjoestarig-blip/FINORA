@@ -1,4 +1,3 @@
-
 name: Build FINORA Android APK
 
 on:
@@ -30,13 +29,6 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Check project files
-        run: |
-          test -f package.json
-          test -f capacitor.config.json
-          test -f index.html
-          echo "File proyek FINORA ditemukan."
-
       - name: Install dependencies
         run: npm install
 
@@ -51,6 +43,43 @@ jobs:
 
       - name: Sync Android project
         run: npx cap sync android
+
+      - name: Enable fullscreen
+        run: |
+          MAIN="android/app/src/main/java/id/finora/finance/MainActivity.java"
+          mkdir -p "$(dirname "$MAIN")"
+          cat > "$MAIN" <<'JAVA'
+          package id.finora.finance;
+          import android.os.Bundle;
+          import android.view.WindowManager;
+          import com.getcapacitor.BridgeActivity;
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              super.onCreate(savedInstanceState);
+              getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+              );
+            }
+          }
+          JAVA
+
+      - name: Apply FINORA launcher icon
+        run: |
+          ICON="resources/icon.png"
+          RES="android/app/src/main/res"
+
+          test -f "$ICON"
+
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p "$RES/mipmap-$density"
+            cp "$ICON" "$RES/mipmap-$density/ic_launcher.png"
+            cp "$ICON" "$RES/mipmap-$density/ic_launcher_round.png"
+          done
+
+          rm -f "$RES/mipmap-anydpi-v26/ic_launcher.xml"
+          rm -f "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
 
       - name: Build Android APK
         run: |
